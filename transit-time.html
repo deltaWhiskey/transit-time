@@ -1,0 +1,97 @@
+<html>
+	<head>
+		<title>Transit Time</title>
+		<style>
+		body {
+			font-family: sans-serif;
+		}
+		button {
+			font-weight: bold;
+			font-size: 1.2em;
+			padding: 1em;
+		}
+		.error {
+			color: maroon;
+			font-weight: bold;
+		}
+		.hide {
+			display: none;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>Transit Time Calculator</h1>
+		<p>How long would it take a space ship to travel between two points? This calculator gives a general idea. This calculator comes with caveats, so don't rely on this for actual astrogation or your physics homework.</p>
+
+		<form>
+			<table border="1" cellpadding="10">
+				<tr>
+					<td>Acceleration:</td>
+					<td><input id="acceleration" value="1"/> Earth gravities (1 gravity = 9.81 meters per second per second)</td>
+				</tr>
+				<tr>
+					<td>Distance to travel:</td>
+					<td>
+						<input id="distance_years" value="1"/> light years<br/>
+						<input id="distance_minutes" value="0"/> light minutes
+					</td>
+				</tr>
+				<tr>
+					<td>Fuel available:</td>
+					<td>
+						<input type="checkbox" id="infinite_fuel" checked="checked"> infinite fuel
+						<div id="fuel_limits" class="hide">
+							<input id="fuel_years" value="0"/> years<br/>
+							<input id="fuel_days" value="60"/> days<br/>
+							<input id="fuel_hours" value="0"/> hours
+						</div>
+					</td>
+				</tr>
+			</table>
+		</form>
+
+		<button id="simulate">run simulation</button>
+		<div id="error" class="error"></div>
+		<div id="output"></div>
+
+		<h2>Distance Examples</h2>
+		<ul>
+			<li>3.3 light minutes - Sun to Mercury</li>
+			<li>6 light minutes - Sun to Venus</li>
+			<li>8.3 light minutes - Sun to Earth (1 astronomical unit)</li>
+			<li>12.7 light minutes - Sun to Mars</li>
+			<li>43 light minutes - Sun to Jupiter</li>
+			<li>78 light minutes - Sun to Saturn</li>
+			<li>162 light minutes - Sun to Uranus</li>
+			<li>252 light minutes - Sun to Neptune</li>
+			<li>4.2 light years - Earth to nearest star</li>
+			<li>5 light yearas - typical distance between nearest stars in Earth's neighborhood. Distance between nearest stars can vary a lot. Stars are packed closer together near the galactic core, and farther apart near the rim. Stars can be very close together, in the case of a binary star.</li>
+			<li>105,700 light years - diameter of the Milky Way galaxy</li>
+		</ul>
+
+		<h2>Caveats</h2>
+		<ul>
+			<li>A real spacecraft uses up fuel as it goes. Over time, its mass drops and its acceleration increases. This calculator ignores that. To learn more, search the internet for "the tyranny of the rocket equation."</li>
+			<li>This calculator assumes a ship can flip around and go from acceleration to deceleration instantly.</li>
+			<li>Humans can survive a limited amount of acceleration. 1G (Earth gravity) is no problem. Astronauts experience 3Gs during rocket lift off. Humans can survive 9Gs briefly. Vibration makes G forces more dangerous. Protective clothing and careful positioning makes G forces more survivable.</li>
+		</ul>
+
+		<h2>TO DO</h2>
+		<ul>
+			<li>toggle decelerate or not?</li>
+			<li>objective time, subjective time</li>
+			<li>fuel limits</li>
+		</ul>
+		<script type="text/javascript">
+		function toggleFuel() {
+			if (document.getElementById('infinite_fuel').checked) {
+				document.getElementById('fuel_limits').classList.add('hide');
+			} else {
+				document.getElementById('fuel_limits').classList.remove('hide');
+			}
+		}
+
+		document.getElementById('infinite_fuel').addEventListener('click', toggleFuel);
+		</script>
+	</body>
+</html>
