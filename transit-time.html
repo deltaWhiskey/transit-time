@@ -103,11 +103,7 @@
 				drift_minutes: 0
 			};
 
-			// derived variables
-			let fuel, // minutes of fuel
-				distance, // light minutes to travel
-				lmpm; // acceleration as light minutes per minute
-
+			// gather output
 			let out = gatherInput();
 			if (out.error != '') {
 				document.getElementById('error').innerHTML = out.error;
