@@ -95,61 +95,82 @@
 
 		// Do the math
 		function simulate() {
-			// input variables
-			let acceleration,
-				distance_years,
-				distance_minutes,
-				fuel_infinite,
-				fuel_years,
-				fuel_days,
-				fuel_hours;
 
-			// ui variables
-			let error = document.getElementById('error');
+			// results
+			let result = {
+				max_speed: 0,
+				accelerate_minutes: 0,
+				drift_minutes: 0
+			};
 
 			// derived variables
-			let fuel;
+			let fuel, // minutes of fuel
+				distance, // light minutes to travel
+				lmpm; // acceleration as light minutes per minute
 
-			// force numeric values for certain fields.
-			[
-				'acceleration',
-				'distance_years',
-				'distance_minutes',
-				'fuel_years',
-				'fuel_days',
-				'fuel_hours'
-			].forEach(function(key) {
-				let string_value = document.getElementById(key).value;
-				let float_value = parseFloat(string_value);
-				if (isNaN(float_value)) {
-					document.getElementById(key).value = 0;
-				}
-			});
-
-
-			// Gather input
-			acceleration = parseFloat(document.getElementById('acceleration').value);
-			distance_years = parseFloat(document.getElementById('distance_years').value);
-			distance_minutes = parseFloat(document.getElementById('distance_minutes').value);
-			fuel_infinite = document.getElementById('fuel_infinite').checked;
-			fuel_years = parseFloat(document.getElementById('fuel_years').value);
-			fuel_days = parseFloat(document.getElementById('fuel_days').value);
-			fuel_hours = parseFloat(document.getElementById('fuel_hours').value);
-
-			// Derive values
-			fuel = fuel_hours + ( fuel_days * 24 ) + ( fuel_years * 24 * 365 );
-
-			// Bounds checking
-			error.innerHTML = '';
-			if (acceleration <= 0) {
-				error.innerHTML += "<p>Please enter a positive acceleration</p>";
-			}
-			if (! fuel_infinite && fuel <= 0) {
-				error.innerHTML += "<p>Please enter a positive fuel amount</p>";
-			}
-			if (error.innerHTML != '') {
+			let out = gatherInput();
+			if (out.error != '') {
+				document.getElementById('error').innerHTML = out.error;
 				return;
 			}
+			fuel = out.fuel;
+			distance = out.distance;
+			lmpm = out.lmpm;
+
+			// Get travel time if acceleration is the only limiting factor
+			result.accelerate_minutes = Math.sqrt( (distance / 2) / (lmpm / 2) );
+
+			if (! fuel_infinite && result.accelerate_minutes > fuel / 2) {
+				// Fuel is a limiting factor. Recalculate.
+				result.accelerate_minutes = fuel / 2;
+			}
+console.log(result.accelerate_minutes);
+		}
+
+		// Gather input, return object.
+		function gatherInput() {
+			const g_to_c = 0.000001963358264; // 1G acceleration in light minutes per minute
+			const output = {};
+			const input = {
+				'acceleration' : 0,
+				'distance_years' : 0,
+				'distance_minutes' : 0,
+				'fuel_years' : 0,
+				'fuel_days' : 0,
+				'fuel_hours' : 0
+			};
+
+			// Read numeric input
+			for ( const key in input ) {
+				const field = document.getElementById(key);
+				let float_value = parseFloat(field.value);
+				if (isNaN(float_value)) {
+					field.value = 0;
+				}
+				input[key] = parseFloat(field.value);
+			};
+
+			// Read non-numeric input
+			input.fuel_infinite = document.getElementById('fuel_infinite').checked;
+
+			// Derive values
+			output.fuel = 60 * (input.fuel_hours + ( input.fuel_days * 24 ) + ( input.fuel_years * 24 * 365 ) );
+			output.distance = input.distance_minutes + ( input.distance_years * 365 * 24 * 60 );
+			output.lmpm = g_to_c * input.acceleration;
+
+			// Bounds checking
+			output.error = '';
+			if (output.lmpm <= 0) {
+				output.error += '<p>Please enter a positive acceleration</p>';
+			}
+			if (output.distance <= 0) {
+				output.error += '<p>Please enter a positive distance</p>';
+			}
+			if (! output.fuel_infinite && output.fuel <= 0) {
+				output.error += '<p>Please enter a positive fuel amount</p>';
+			}
+
+			return output;
 		}
 
 		document.getElementById('fuel_infinite').addEventListener('click', toggleFuel);
