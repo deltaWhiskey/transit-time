@@ -47,6 +47,13 @@
 						</div>
 					</td>
 				</tr>
+				<tr>
+					<td>Limit speed:</td>
+					<td>
+						<input id="speed_limit" value="99.999999999">% light speed<br/>
+						ship stops accelerating at this speed
+					</td>
+				</tr>
 			</table>
 		</form>
 
@@ -81,7 +88,6 @@
 		<h2>TO DO</h2>
 		<ul>
 			<li>toggle decelerate or not?</li>
-			<li>cap speed at c</li>
 		</ul>
 		<script type="text/javascript">
 
@@ -125,10 +131,16 @@
 				// Fuel is a limiting factor. Recalculate.
 				result.accelerate_minutes = input.fuel / 2;
 				result.max_speed = result.accelerate_minutes * input.lmpmpm;
-				const accelerate_distance_lm = result.max_speed / 2;
-				const drift_distance_lm = input.distance - ( accelerate_distance_lm * 2 );
-				result.drift_minutes = drift_distance_lm / result.max_speed;
+				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
 			}
+console.log("before", result);
+			if ( result.max_speed * 100 > input.speed_limit ) {
+				// Speed limit is limiting factor. Recalculate.
+				result.accelerate_minutes = input.speed_limit / (input.lmpmpm * 100);
+				result.max_speed = input.speed_limit / 100; // convert %c to lmpm
+				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
+			}
+console.log("after", result);
 
 			document.getElementById('output').innerHTML = describeFlightPlan(input, result);
 		}
@@ -136,20 +148,19 @@
 		// Output results
 		function describeFlightPlan(input, result) {
 			let output = '<h2>Flight Plan</h2>';
-			const max_lmpm = input.lmpmpm * result.accelerate_minutes
 
 			output += '<ul>' +
 				'<li>accelerate at ' + input.acceleration + 'G for ' + prettyTime(result.accelerate_minutes) + '</li>';
 
 			// Max speed
 			{
-				const max_percent_c = max_lmpm * 100;
-				output += '<li>reach maximum speed of ' + prettyDecimal(max_lmpm) + ' light minutes per minute ('
+				const max_percent_c = result.max_speed * 100;
+				output += '<li>reach maximum speed of ' + prettyDecimal(result.max_speed) + ' light minutes per minute ('
 					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
 
 				// Time dilation
-				const dilation = timeDilation( max_lmpm );
-				if ( max_lmpm > 1 ) {
+				const dilation = timeDilation( result.max_speed );
+				if ( result.max_speed > 1 ) {
 					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel or acceleration to something lower.</li>';
 				} else if ( dilation < 1.01 ) {
 					output += '<li>time dilation: at this speed, there is less than 1% time dilation.</li>';
@@ -170,6 +181,13 @@
 			output += '<li>total trip time: ' + prettyTime( result.accelerate_minutes * 2 + result.drift_minutes ) + ', for people on the ship</li>';
 
 			return output;
+		}
+
+		// How long will ship drift?
+		function driftMinutes( max_speed, distance_to_travel_lm ) {
+			const accelerate_distance_lm = max_speed / 2;
+			const drift_distance_lm = distance_to_travel_lm - ( accelerate_distance_lm * 2 );
+			return drift_minutes = drift_distance_lm / max_speed;
 		}
 
 		/**
@@ -235,7 +253,8 @@
 				'distance_minutes' : 0,
 				'fuel_years' : 0,
 				'fuel_days' : 0,
-				'fuel_hours' : 0
+				'fuel_hours' : 0,
+				'speed_limit' : 0
 			};
 
 			const calculated = {
@@ -272,6 +291,9 @@
 			}
 			if (! input.fuel_infinite && calculated.fuel <= 0) {
 				input.error += '<p>Please enter a positive fuel amount</p>';
+			}
+			if (input.speed_limit <= 0) {
+				input.error += '<p>Please enter a positive speed limit</p>';
 			}
 
 			return {
