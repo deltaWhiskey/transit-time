@@ -135,24 +135,26 @@
 
 		// Output results
 		function describeFlightPlan(input, result) {
-			let output = '<h2>Flight Plan</h2>' +
-				'<ul>' +
+			let output = '<h2>Flight Plan</h2>';
+			const max_lmpm = input.lmpmpm * result.accelerate_minutes
+
+			output += '<ul>' +
 				'<li>accelerate at ' + input.acceleration + 'G for ' + prettyTime(result.accelerate_minutes) + '</li>';
 
 			// Max speed
 			{
-				const max_lmpm = input.lmpmpm * result.accelerate_minutes
 				const max_percent_c = max_lmpm * 100;
 				output += '<li>reach maximum speed of ' + prettyDecimal(max_lmpm) + ' light minutes per minute ('
 					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
 
 				// Time dilation
 				const dilation = timeDilation( max_lmpm );
-				console.log(dilation);
-				if ( dilation < 1.01 ) {
+				if ( max_lmpm > 1 ) {
+					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel or acceleration to something lower.</li>';
+				} else if ( dilation < 1.01 ) {
 					output += '<li>time dilation: at this speed, there is less than 1% time dilation.</li>';
 				} else {
-					output += '<li>' + prettyDecimal( dilation ) + 'x time dilation: at this speed, 1 day onboard the ship is ' + prettyDecimal( dilation ) + ' days back home.</li>';
+					output += '<li>' + prettyDecimal( dilation ) + 'x time dilation: at this speed, 1 day on the ship is ' + prettyDecimal( dilation ) + ' days back home.</li>';
 				}
 			}
 
