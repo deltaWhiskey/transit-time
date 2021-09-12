@@ -21,7 +21,7 @@
 	</head>
 	<body>
 		<h1>Transit Time Calculator</h1>
-		<p>How long would it take a space ship to travel between two points? This calculator gives a general idea. This calculator comes with caveats, so don't rely on this for actual astrogation or your rocket science homework.</p>
+		<p>How long would it take a space ship to travel between two points? This calculator gives a general idea. Don't rely on this for your rocket science homework or actual astrogation. See caveats at bottom.</p>
 
 		<form>
 			<table border="1" cellpadding="10">
@@ -39,8 +39,8 @@
 				<tr>
 					<td>Fuel available:</td>
 					<td>
-						<input type="checkbox" id="fuel_infinite" checked="checked"> infinite fuel
-						<div id="fuel_limits" class="hide">
+						<input type="checkbox" id="fuel_infinite"> infinite fuel
+						<div id="fuel_limits">
 							<input id="fuel_years" value="0"/> years<br/>
 							<input id="fuel_days" value="60"/> days<br/>
 							<input id="fuel_hours" value="0"/> hours
@@ -65,7 +65,7 @@
 			<li>162 light minutes - Sun to Uranus</li>
 			<li>252 light minutes - Sun to Neptune</li>
 			<li>4.2 light years - Earth to nearest star</li>
-			<li>5 light yearas - typical distance between nearest stars in Earth's neighborhood. Distance between nearest stars can vary a lot. Stars are packed closer together near the galactic core, and farther apart near the rim. Stars can be very close together, in the case of a binary star.</li>
+			<li>5 light years - typical distance between nearest stars in Earth's neighborhood. Distance between nearest stars can vary a lot. Stars are packed closer together near the galactic core, and farther apart near the rim. Stars can be very close together, in the case of a binary star.</li>
 			<li>105,700 light years - diameter of the Milky Way galaxy</li>
 		</ul>
 
@@ -75,12 +75,12 @@
 			<li>This calculator assumes a ship can flip around and go from acceleration to deceleration instantly.</li>
 			<li>Humans can survive a limited amount of acceleration. 1G (Earth gravity) is no problem. Astronauts experience 3Gs during rocket lift off. Humans can survive 9Gs briefly. Vibration makes G forces more dangerous. Protective clothing and careful positioning make G forces more survivable.</li>
 			<li>This calculator is for a trip that starts and stops as the same velocity.</li>
+			<li>If there is another caveat that should be added to this list, please let me know.</li>
 		</ul>
 
 		<h2>TO DO</h2>
 		<ul>
 			<li>toggle decelerate or not?</li>
-			<li>objective time, subjective time</li>
 			<li>cap speed at c</li>
 		</ul>
 		<script type="text/javascript">
@@ -145,6 +145,15 @@
 				const max_percent_c = max_lmpm * 100;
 				output += '<li>reach maximum speed of ' + prettyDecimal(max_lmpm) + ' light minutes per minute ('
 					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
+
+				// Time dilation
+				const dilation = timeDilation( max_lmpm );
+				console.log(dilation);
+				if ( dilation < 1.01 ) {
+					output += '<li>time dilation: at this speed, there is less than 1% time dilation.</li>';
+				} else {
+					output += '<li>' + prettyDecimal( dilation ) + 'x time dilation: at this speed, 1 day onboard the ship is ' + prettyDecimal( dilation ) + ' days back home.</li>';
+				}
 			}
 
 			// Maybe drift for a while
@@ -156,11 +165,25 @@
 			output += '<li>decelerate at ' + input.acceleration + 'G for ' + prettyTime(result.accelerate_minutes) + '</li>';
 
 			// Total subjective trip time
-			output += '<li>total trip time: ' + prettyTime( result.accelerate_minutes * 2 + result.drift_minutes ) + '</li>';
-
-			// Total objective trip time
+			output += '<li>total trip time: ' + prettyTime( result.accelerate_minutes * 2 + result.drift_minutes ) + ', for people on the ship</li>';
 
 			return output;
+		}
+
+		/**
+		 * Calculate time dilation. Returns percent dilation.
+		 * For example, if the traveller experiences 1 year,
+		 * while back home people experience 3 years, then
+		 * the returned dilation multiplier is 3.
+		 *
+		 * Thanks to https://www.phy.olemiss.edu/HEP/QuarkNet/time.html
+		 * for this formula.
+		 *
+		 * @param number light_minutes_per_minute
+		 * @return number dilation multiplier
+		 */
+		function timeDilation( light_minutes_per_minute ) {
+			return 1 / Math.pow( 1 - Math.pow( light_minutes_per_minute, 2 ), 0.5);
 		}
 
 		// Given a number of minutes, output a pretty string.
