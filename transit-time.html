@@ -82,6 +82,7 @@
 			<li>This calculator assumes a ship can flip around and go from acceleration to deceleration instantly.</li>
 			<li>Humans can survive a limited amount of acceleration. 1G (Earth gravity) is no problem. Astronauts experience 3Gs during rocket lift off. Humans can survive 9Gs briefly. Vibration makes G forces more dangerous. Protective clothing and careful positioning make G forces more survivable.</li>
 			<li>This calculator is for a trip that starts and stops as the same velocity.</li>
+			<li>As speeds approach the speed of light, objective time estimates get weird; they can report that the ship will arrive sooner if it travels at a lower speed. That seems like a bug to me.</li>
 			<li>If there is another caveat that should be added to this list, please let me know.</li>
 		</ul>
 
@@ -133,20 +134,20 @@
 				result.max_speed = result.accelerate_minutes * input.lmpmpm;
 				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
 			}
-console.log("before", result);
+
 			if ( result.max_speed * 100 > input.speed_limit ) {
 				// Speed limit is limiting factor. Recalculate.
 				result.accelerate_minutes = input.speed_limit / (input.lmpmpm * 100);
 				result.max_speed = input.speed_limit / 100; // convert %c to lmpm
 				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
 			}
-console.log("after", result);
 
 			document.getElementById('output').innerHTML = describeFlightPlan(input, result);
 		}
 
 		// Output results
 		function describeFlightPlan(input, result) {
+			const dilation = timeDilation( result.max_speed );
 			let output = '<h2>Flight Plan</h2>';
 
 			output += '<ul>' +
@@ -159,7 +160,6 @@ console.log("after", result);
 					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
 
 				// Time dilation
-				const dilation = timeDilation( result.max_speed );
 				if ( result.max_speed > 1 ) {
 					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel or acceleration to something lower.</li>';
 				} else if ( dilation < 1.01 ) {
@@ -179,6 +179,13 @@ console.log("after", result);
 
 			// Total subjective trip time
 			output += '<li>total trip time: ' + prettyTime( result.accelerate_minutes * 2 + result.drift_minutes ) + ', for people on the ship</li>';
+
+			// Total objective trip time
+			if ( result.drift_minutes > 0 && dilation >= 1.01 ) {
+				const dilated_drift = result.drift_minutes * dilation;
+				const dilated_time = dilated_drift + ( result.accelerate_minutes * 2 );
+				output += '<li>total trip time, for people back home: ' + prettyTime( dilated_time ) + ' (only counting time dilation during drift.)</li>';
+			}
 
 			return output;
 		}
@@ -205,12 +212,13 @@ console.log("after", result);
 		function timeDilation( light_minutes_per_minute ) {
 			return 1 / Math.pow( 1 - Math.pow( light_minutes_per_minute, 2 ), 0.5);
 		}
-
+// 223606.38
 		// Given a number of minutes, output a pretty string.
 		// For example, if minutes=90, output will be 1.5 hours.
 		function prettyTime(minutes) {
 			// Figure out how many minutes in each time increment
 			const time = {
+				centuries : 60 * 24 * 365 * 100,
 				years : 60 * 24 * 365,
 				days : 60 * 24,
 				hours : 60
@@ -237,11 +245,11 @@ console.log("after", result);
 				const multiplier = Math.pow( 10, i );
 				const pretty = Math.round( input * multiplier ) / multiplier;
 				if ( 0 != pretty ) {
-					return pretty;
+					return pretty.toLocaleString();
 				}
 			}
 
-			return input;
+			return input.toLocaleString();
 		}
 
 		// Gather input, return parsed input.
