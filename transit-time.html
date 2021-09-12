@@ -21,7 +21,8 @@
 	</head>
 	<body>
 		<h1>Transit Time Calculator</h1>
-		<p>How long would it take a space ship to travel between two points? This calculator gives a general idea. Don't rely on this for your rocket science homework or actual astrogation. See caveats at bottom.</p>
+		<p>How long would it take a space ship to travel between two points? This calculator gives a general idea for an idealized space ship that accelerates at a constant rate.</p>
+		<p>This was created as a toy to explore what kinds of speeds and times would be involved in travelling between celestial bodies. It uses simplified calcualations, so don't rely on this for your physics homework or actual astrogation. See caveats at bottom.</p>
 
 		<form>
 			<table border="1" cellpadding="10">
@@ -48,9 +49,9 @@
 					</td>
 				</tr>
 				<tr>
-					<td>Limit speed:</td>
+					<td>Speed limit:</td>
 					<td>
-						<input id="speed_limit" value="99.999999999">% light speed<br/>
+						<input id="speed_limit" value="90">% light speed<br/>
 						ship stops accelerating at this speed
 					</td>
 				</tr>
@@ -78,11 +79,14 @@
 
 		<h2>Caveats</h2>
 		<ul>
-			<li>A real spacecraft uses up fuel as it goes. Over time, its mass drops and its acceleration increases. This calculator ignores that. To learn more, search the internet for "the tyranny of the rocket equation."</li>
+			<li>This calculator is for a trip that starts and stops as the same velocity.</li>
+			<li>Since this calculator assumes fixed acceleration, and does not consider thrust vs. mass, there are some differences from reality:
+				<ul>
+					<li>A real spacecraft uses up fuel as it goes. Over time, its mass drops, so the same thrust gives more acceleration. To learn more, search the internet for "the tyranny of the rocket equation."</li>
+					<li>A real spacecraft, as it approaches the speed of light, will get less acceleration out of the same thrust. This prevents accelerating past the speed of light, because that would require infinite thrust. The "speed limit" field is included here because the "fixed acceleration" approach in this calculator does not make sense near the speed of light. To learn more, search the internet for "special relativity."</li>
+				</ul>
 			<li>This calculator assumes a ship can flip around and go from acceleration to deceleration instantly.</li>
 			<li>Humans can survive a limited amount of acceleration. 1G (Earth gravity) is no problem. Astronauts experience 3Gs during rocket lift off. Humans can survive 9Gs briefly. Vibration makes G forces more dangerous. Protective clothing and careful positioning make G forces more survivable.</li>
-			<li>This calculator is for a trip that starts and stops as the same velocity.</li>
-			<li>As speeds approach the speed of light, objective time estimates get weird; they can report that the ship will arrive sooner if it travels at a lower speed. That seems like a bug to me.</li>
 			<li>If there is another caveat that should be added to this list, please let me know.</li>
 		</ul>
 
@@ -157,7 +161,7 @@
 
 				// Time dilation
 				if ( result.max_speed > 1 ) {
-					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel or acceleration to something lower.</li>';
+					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel, acceleration, or speed limit to something lower.</li>';
 				} else if ( dilation < 1.01 ) {
 					output += '<li>time dilation: at this speed, there is less than 1% time dilation.</li>';
 				} else {
