@@ -1,4 +1,10 @@
 <html>
+	<!--
+	TO DO
+	* show distance travelled during acceleration (finish up pretty distance function)
+	* show distance travelled during drift
+	* check calc: looks like too much drift time when 1G accel, 1 light year distance, infinite fuel.
+	-->
 	<head>
 		<title>Transit Time</title>
 		<style>
@@ -64,6 +70,7 @@
 
 		<h2>Distance Examples</h2>
 		<ul>
+			<li>0.0217 light minutes - Earth to Moon</li>
 			<li>3.3 light minutes - Sun to Mercury</li>
 			<li>6 light minutes - Sun to Venus</li>
 			<li>8.3 light minutes - Sun to Earth (1 astronomical unit)</li>
@@ -148,16 +155,19 @@
 		// Output results
 		function describeFlightPlan(input, result) {
 			const dilation = timeDilation( result.max_speed );
-			let output = '<h2>Flight Plan</h2>';
+			let distance_unit = input.distance_minutes > 0 ? 'minutes' : 'years';
 
-			output += '<ul>' +
-				'<li>accelerate at ' + input.acceleration + 'G for ' + prettyTime(result.accelerate_minutes) + '</li>';
+			let output = '<h2>Flight Plan</h2>'
+				+ '<ul>'
+				+ '<li>accelerate at ' + input.acceleration + 'G for ' + prettyTime(result.accelerate_minutes)
+				+ '<ul>';
 
 			// Max speed
 			{
 				const max_percent_c = result.max_speed * 100;
 				output += '<li>reach maximum speed of ' + prettyDecimal(result.max_speed) + ' light minutes per minute ('
 					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
+				output += '<li>travel ' + prettyDistance( result.max_speed * result.accelerate_minutes, distance_unit ) + ' during acceleration</li>';
 
 				// Time dilation
 				if ( result.max_speed > 1 ) {
@@ -167,11 +177,14 @@
 				} else {
 					output += '<li>' + prettyDecimal( dilation ) + 'x time dilation: at this speed, 1 day on the ship is ' + prettyDecimal( dilation ) + ' days back home.</li>';
 				}
+
+				output += '</li></ul>';
 			}
 
 			// Maybe drift for a while
 			if ( result.drift_minutes > 0 ) {
-				output += '<li>drift for ' + prettyTime( result.drift_minutes ) + '</li>';
+				output += '<li>drift for ' + prettyTime( result.drift_minutes ) + ', travelling '
+					+ prettyTime( result.drift_minutes * result.max_speed ) + ' light minutes</li>';
 			}
 
 			// Decelerate
@@ -233,6 +246,21 @@
 			return prettyDecimal( amount ) + ' minutes';
 		}
 
+		/**
+		 * Calculate pretty representation of a distance.
+		 *
+		 * @param number light_minutes
+		 * @param string unit either "minutes" or "years". Indicates what output unit should be.
+		 * @return string like "36.5 light minutes"
+		 */
+		function prettyDistance( light_minutes, unit ) {
+			let distance = light_minutes;
+			if ( 'years' == unit ) {
+				distance = distance / 365;
+			}
+			return prettyDecimal( distance ) + ' light ' + unit;
+		}
+
 		// Given a number, returns it with only two decimal places.
 		// However, it will use more decimal places if necessary.
 		// For example:
@@ -245,11 +273,17 @@
 				const multiplier = Math.pow( 10, i );
 				const pretty = Math.round( input * multiplier ) / multiplier;
 				if ( 0 != pretty ) {
-					return pretty.toLocaleString();
+					if ( pretty >= 1 ) {
+						// Add commas
+						return pretty.toLocaleString();
+					} else {
+						return pretty;
+					}
 				}
 			}
 
-			return input.toLocaleString();
+			// This is some really small number. Send the whole thing.
+			return input;
 		}
 
 		// Gather input, return parsed input.
