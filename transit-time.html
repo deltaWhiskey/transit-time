@@ -1,10 +1,4 @@
 <html>
-	<!--
-	TO DO
-	* show distance travelled during acceleration (finish up pretty distance function)
-	* show distance travelled during drift
-	* check calc: looks like too much drift time when 1G accel, 1 light year distance, infinite fuel.
-	-->
 	<head>
 		<title>Transit Time</title>
 		<style>
@@ -119,9 +113,12 @@
 
 			// results
 			result = {
-				max_speed: 0,
+				max_speed: 0, // light minutes per minute. If this is 1, then max speed is speed of light.
 				accelerate_minutes: 0,
+				accelerate_distance: 0,
+				drift_required: false,
 				drift_minutes: 0,
+				drift_distance: 0
 			};
 
 			// read input
@@ -139,14 +136,21 @@
 				// Fuel is a limiting factor. Recalculate.
 				result.accelerate_minutes = input.fuel / 2;
 				result.max_speed = result.accelerate_minutes * input.lmpmpm;
-				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
+				result.drift_required = true;
 			}
 
 			if ( result.max_speed * 100 > input.speed_limit ) {
 				// Speed limit is limiting factor. Recalculate.
 				result.accelerate_minutes = input.speed_limit / (input.lmpmpm * 100);
 				result.max_speed = input.speed_limit / 100; // convert %c to lmpm
-				result.drift_minutes = driftMinutes( result.max_speed, input.distance );
+				result.drift_required = true;
+			}
+
+			// Derive some values from above that will be useful for describing flight plan
+			result.accelerate_distance = result.max_speed / 2 * result.accelerate_minutes;
+			if ( result.drift_required ) {
+				result.drift_distance = input.distance - ( result.accelerate_distance * 2 );
+				result.drift_minutes = result.drift_distance / result.max_speed;
 			}
 
 			document.getElementById('output').innerHTML = describeFlightPlan(input, result);
@@ -166,12 +170,13 @@
 			{
 				const max_percent_c = result.max_speed * 100;
 				output += '<li>reach maximum speed of ' + prettyDecimal(result.max_speed) + ' light minutes per minute ('
-					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>';
-				output += '<li>travel ' + prettyDistance( result.max_speed * result.accelerate_minutes, distance_unit ) + ' during acceleration</li>';
+					+ prettyDecimal(max_percent_c) + '% the speed of light)</li>'
+					+ '<li>travel ' + prettyDistance( result.accelerate_distance, distance_unit ) + ' during acceleration</li>';
 
 				// Time dilation
 				if ( result.max_speed > 1 ) {
-					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. That means the formulas here will not work. Maybe try limiting fuel, acceleration, or speed limit to something lower.</li>';
+					output += '<li class="error">time dilation: this flight plan involves flying faster than the speed of light. '
+						+ 'That means the formulas here will not work. Maybe try limiting fuel, acceleration, or speed limit to something lower.</li>';
 				} else if ( dilation < 1.01 ) {
 					output += '<li>time dilation: at this speed, there is less than 1% time dilation.</li>';
 				} else {
@@ -182,9 +187,11 @@
 			}
 
 			// Maybe drift for a while
-			if ( result.drift_minutes > 0 ) {
-				output += '<li>drift for ' + prettyTime( result.drift_minutes ) + ', travelling '
-					+ prettyTime( result.drift_minutes * result.max_speed ) + ' light minutes</li>';
+			if ( result.drift_required ) {
+				output += '<li>drift for ' + prettyTime( result.drift_minutes )
+					+ '<ul>'
+					+ '<li>travel ' + prettyDistance( result.drift_distance, distance_unit ) + ' during drift</li>'
+					+ '</ul></li>';
 			}
 
 			// Decelerate
@@ -194,20 +201,22 @@
 			output += '<li>total trip time: ' + prettyTime( result.accelerate_minutes * 2 + result.drift_minutes ) + ', for people on the ship</li>';
 
 			// Total objective trip time
-			if ( result.drift_minutes > 0 && dilation >= 1.01 ) {
+			if ( result.drift_required && dilation >= 1.01 ) {
 				const dilated_drift = result.drift_minutes * dilation;
 				const dilated_time = dilated_drift + ( result.accelerate_minutes * 2 );
 				output += '<li>total trip time, for people back home: ' + prettyTime( dilated_time ) + ' (only counting time dilation during drift.)</li>';
 			}
 
-			return output;
-		}
+			// Raw variables
+			output += '<button id="raw_variable_button" onclick="showRawVariables()">show raw variables</button>'
+				+ '<pre id="raw_variables" class="hide">Raw variables:'
+				+ "\n"
+				+ JSON.stringify(input, null, '\t')
+				+ "\n"
+				+ JSON.stringify(result, null, '\t')
+				+ '</pre>';
 
-		// How long will ship drift?
-		function driftMinutes( max_speed, distance_to_travel_lm ) {
-			const accelerate_distance_lm = max_speed / 2;
-			const drift_distance_lm = distance_to_travel_lm - ( accelerate_distance_lm * 2 );
-			return drift_minutes = drift_distance_lm / max_speed;
+			return output;
 		}
 
 		/**
@@ -225,7 +234,7 @@
 		function timeDilation( light_minutes_per_minute ) {
 			return 1 / Math.pow( 1 - Math.pow( light_minutes_per_minute, 2 ), 0.5);
 		}
-// 223606.38
+
 		// Given a number of minutes, output a pretty string.
 		// For example, if minutes=90, output will be 1.5 hours.
 		function prettyTime(minutes) {
@@ -243,7 +252,7 @@
 				}
 			}
 
-			return prettyDecimal( amount ) + ' minutes';
+			return prettyDecimal( minutes ) + ' minutes';
 		}
 
 		/**
@@ -256,8 +265,9 @@
 		function prettyDistance( light_minutes, unit ) {
 			let distance = light_minutes;
 			if ( 'years' == unit ) {
-				distance = distance / 365;
+				distance = distance / 60 / 24 / 365;
 			}
+
 			return prettyDecimal( distance ) + ' light ' + unit;
 		}
 
@@ -342,6 +352,11 @@
 				...input,
 				...calculated
 			};
+		}
+
+		function showRawVariables() {
+			document.getElementById('raw_variable_button').classList.add('hide');
+			document.getElementById('raw_variables').classList.remove('hide');
 		}
 
 		document.getElementById('fuel_infinite').addEventListener('click', toggleFuel);
